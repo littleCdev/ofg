@@ -47,7 +47,13 @@ class ofgImage{
      */
     public function setSThumbDir($sThumbDir)
     {
-        $this->sThumbDir = $sThumbDir;
+        $this->sThumbDir = $sThumbDir."/";
+        $this->setThumbFiles();
+    }
+
+    private function setThumbFiles(){
+        $this->sCroppedFile = $this->sThumbDir.self::$croppedPrefix.$this->sFile;
+        $this->sResizedFile = $this->sThumbDir.self::$scaledPrefix.$this->sFile;
     }
 
     public function sCroppedFile(){
@@ -118,9 +124,8 @@ class ofgImage{
             return;
         }
         $this->sFile = $sFile;
-        $this->sCroppedFile = $this->sThumbDir.self::$croppedPrefix.$sFile;
-        $this->sResizedFile = $this->sThumbDir.self::$scaledPrefix.$sFile;
 
+        $this->setThumbFiles();
 
         if(file_exists($this->sCroppedFile))
             list($this->iCroppedWidth,$this->iCroppedHeight) = getimagesize($this->sCroppedFile);
@@ -130,6 +135,12 @@ class ofgImage{
     }
 
     public function resize(){
+
+        if(file_exists($this->sResizedFile))
+            return;
+
+        $this->checkThumbdir();
+
         if($this->sImageLibary == "GD"){
             $this->_gdResize();
         }elseif($this->sImageLibary == "IM"){
@@ -139,6 +150,12 @@ class ofgImage{
     }
 
     public function crop(){
+
+        if(file_exists($this->sCroppedFile))
+            return;
+
+        $this->checkThumbdir();
+
         if($this->sImageLibary == "GD"){
             $this->_gdCropImage();
         }elseif($this->sImageLibary == "IM"){
@@ -356,6 +373,32 @@ class ofgImage{
         if($this->sImageLibary == "")
             exit("can not find lib-gd or lib-imagick");
     }
+
+    /**
+     * creates thumbdir if needed and test if it's writeable
+     */
+    private function checkThumbdir(){
+        if(!is_dir($this->sThumbDir)){
+            $oldMask = umask(0); // make it real 777
+            if(!mkdir($this->sThumbDir,0777)){
+                exit("can not create thumbdir: ".$this->sThumbDir);
+            }
+            umask($oldMask);
+        }
+
+        $sTestFile = $this->sThumbDir."/filerPermTest";
+        if(!file_put_contents($sTestFile,"test")){
+            exit("can not write to thumbdir: ".$this->sThumbDir);
+        }
+
+        if(!is_writable($sTestFile)){
+            exit("thumbdir: ".$this->sThumbDir." is not writable!");
+        }
+
+        if(!unlink($sTestFile)){
+            exit("can not delete file in thumbdir");
+        }
+    }
 }
 
 class ofg{
@@ -453,7 +496,6 @@ footer.page-footer{
      */
     public function __construct()
     {
-        $this->checkFolderAndRights();
         $this->getDir();
         $this->scanDir();
 
@@ -470,33 +512,7 @@ footer.page-footer{
             $this->sendJs();
         }
 
-
-
-
         $this->getHtml();
-    }
-
-
-    private function checkFolderAndRights(){
-        if(!is_dir($this->sThumbDir)){
-            $oldMask = umask(0); // make it real 777
-            if(!mkdir($this->sThumbDir,0777)){
-                exit("can not create thumbdir: ".$this->sThumbDir);
-            }
-            umask($oldMask);
-        }
-
-        $sTestFile = $this->sThumbDir."/filerPermTest";
-        if(!file_put_contents($sTestFile,"test")){
-            exit("can not write to thumbdir: ".$this->sThumbDir);
-        }
-
-        if(!is_writable($sTestFile)){
-            exit("thumbdir: ".$this->sThumbDir." is not writable!");
-        }
-
-
-        $this->aDirsToHide[] = $this->sThumbDir;
     }
 
     /**
@@ -527,9 +543,10 @@ footer.page-footer{
 
         $aFiles = scandir($this->sDir);
 
-        // don't show ./ and ../
+        // don't show ./ and ../ and thumbdir
         $this->aDirsToHide[] = ".";
         $this->aDirsToHide[] = "..";
+        $this->aDirsToHide[] = $this->sThumbDir;
 
         foreach($aFiles as $sDirEntry){
             if(is_dir($sDirEntry)){
