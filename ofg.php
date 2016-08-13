@@ -28,7 +28,7 @@ class ofgImage{
     public $iScaledWidth = -1;
     public $iScaledHeight = -1;
 
-    private $sThumbDir = ".ofgThumbs/";
+    private $sThumbDir = "";
 
     private $sFile = "";
     private $sResizedFile = "";
@@ -122,15 +122,11 @@ class ofgImage{
         $this->sResizedFile = $this->sThumbDir.self::$scaledPrefix.$sFile;
 
 
-        if(!file_exists($this->sCroppedFile)){
-            $this->crop();
-        }
-        list($this->iCroppedWidth,$this->iCroppedHeight) = getimagesize($this->sCroppedFile);
+        if(file_exists($this->sCroppedFile))
+            list($this->iCroppedWidth,$this->iCroppedHeight) = getimagesize($this->sCroppedFile);
 
-        if(!file_exists($this->sResizedFile)){
-            $this->resize();
-        }
-        list($this->iScaledWidth,$this->iScaledHeight) = getimagesize($this->sResizedFile);
+        if(!file_exists($this->sResizedFile))
+            list($this->iScaledWidth,$this->iScaledHeight) = getimagesize($this->sResizedFile);
     }
 
     public function resize(){
@@ -139,6 +135,7 @@ class ofgImage{
         }elseif($this->sImageLibary == "IM"){
             $this->_imResize();
         }
+        list($this->iScaledWidth,$this->iScaledHeight) = getimagesize($this->sResizedFile);
     }
 
     public function crop(){
@@ -147,6 +144,7 @@ class ofgImage{
         }elseif($this->sImageLibary == "IM"){
             $this->_imCrop();
         }
+        list($this->iCroppedWidth,$this->iCroppedHeight) = getimagesize($this->sCroppedFile);
     }
 
     /*
@@ -543,7 +541,11 @@ footer.page-footer{
                 // add to files-array if not to hide and valid image-type
                 if(!in_array($sDirEntry,$this->aFilesToHide)
                     && in_array(ofgImage::getFileExtension($sDirEntry),$this->aValidImageTypes)){
-                    $this->aFiles[] = new ofgImage($sDirEntry);
+                    $oImage = new  ofgImage($sDirEntry);
+                    $oImage->setSThumbDir($this->sThumbDir);
+                    $oImage->resize();
+                    $oImage->crop();
+                    $this->aFiles[] = $oImage;
                 }
             }else {
                 // wtf??
