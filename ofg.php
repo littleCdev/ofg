@@ -481,12 +481,14 @@ footer.page-footer{
 
     private function checkFolderAndRights(){
         if(!is_dir($this->sThumbDir)){
-            if(!mkdir($this->sThumbDir,777)){
+            $oldMask = umask(0); // make it real 777
+            if(!mkdir($this->sThumbDir,0777)){
                 exit("can not create thumbdir: ".$this->sThumbDir);
             }
+            umask($oldMask);
         }
 
-        $sTestFile = $this->sThumbDir."filerPermTest";
+        $sTestFile = $this->sThumbDir."/filerPermTest";
         if(!file_put_contents($sTestFile,"test")){
             exit("can not write to thumbdir: ".$this->sThumbDir);
         }
