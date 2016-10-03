@@ -403,7 +403,10 @@ class ofgImage{
 
 class ofg{
 
-
+    /**
+     * @var ofg
+     */
+    private static $oInstance;
 
     public $aFilesToHide = [
 
@@ -493,11 +496,19 @@ footer.page-footer{
 
     /**
      * ofg constructor.
+     * @param $bStatic
      */
-    public function __construct()
+    public function __construct($bStatic = false)
     {
-        $this->getDir();
-        $this->scanDir();
+
+        if($bStatic){
+            return $this;
+        }
+
+        $oInstance = self::getInstance();
+
+        $oInstance->getDir();
+        $oInstance->scanDir();
 
         // just send the CSS
         if(isset($_GET["file"]) && $_GET["file"]=="materialize.min.css"){
@@ -509,10 +520,32 @@ footer.page-footer{
 
         // just send the js
         if(isset($_GET["file"]) && $_GET["file"]=="ofg.js"){
-            $this->sendJs();
+            $oInstance->sendJs();
         }
 
-        $this->getHtml();
+        $oInstance->getHtml();
+
+        return $oInstance;
+    }
+
+    /**
+     * @function returns the instance of ofg, use it to set variables like thumb-dir etc
+     * @return ofg
+     */
+    private static function getInstance(){
+        if( !self::$oInstance ) {
+            self::$oInstance = new self(true);
+        }
+        return self::$oInstance;
+    }
+
+
+    /**
+     * @function set sThumbDir
+     * @param $sDir
+     */
+    public static function setThumbDir($sDir){
+        self::getInstance()->sThumbDir = $sDir;
     }
 
     /**
@@ -914,4 +947,9 @@ for(i=0;i<jsonly.length;i++)
 }
 
 
+// example how to set the dir for thumbs, default is .ofgThumbs
+// ofg::setThumbDir(".ofgThumbs");
+
+// create gallery
 new ofg();
+
