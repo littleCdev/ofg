@@ -42,18 +42,27 @@ class ofgImage{
         return $this->sThumbDir;
     }
 
-    /**
-     * @param string $sThumbDir
-     */
-    public function setSThumbDir($sThumbDir)
-    {
-        $this->sThumbDir = $sThumbDir."/";
-        $this->setThumbFiles();
-    }
 
     private function setThumbFiles(){
         $this->sCroppedFile = $this->sThumbDir.self::$croppedPrefix.$this->sFile;
         $this->sResizedFile = $this->sThumbDir.self::$scaledPrefix.$this->sFile;
+
+        if(file_exists($this->sCroppedFile)){
+            $aSizes = getimagesize($this->sCroppedFile);
+            if($aSizes === false) {
+                echo "// can not read ".$this->sCroppedFile." <br>\n";
+            }else
+                list($this->iCroppedWidth,$this->iCroppedHeight) = $aSizes;
+
+        }
+
+        if(file_exists($this->sResizedFile)){
+            $aSizes = getimagesize($this->sResizedFile);
+            if($aSizes === false){
+                echo "// can not read ".$this->sResizedFile." <br>\n";
+            }else
+                list($this->iScaledWidth,$this->iScaledHeight) = $aSizes;
+        }
     }
 
     public function sCroppedFile(){
@@ -114,7 +123,9 @@ class ofgImage{
         return $fileSize;
     }
 
-    public function __construct($sFile){
+    public function __construct($sFile, $sThumbdir){
+        $this->sThumbDir = $sThumbdir."/";
+
         $this->checkForGdAndIM();
 
         list($this->iWidth,$this->iHeight,$iType) = getimagesize($sFile);
@@ -126,12 +137,6 @@ class ofgImage{
         $this->sFile = $sFile;
 
         $this->setThumbFiles();
-
-        if(file_exists($this->sCroppedFile))
-            list($this->iCroppedWidth,$this->iCroppedHeight) = getimagesize($this->sCroppedFile);
-
-        if(!file_exists($this->sResizedFile))
-            list($this->iScaledWidth,$this->iScaledHeight) = getimagesize($this->sResizedFile);
     }
 
     public function resize(){
@@ -591,8 +596,7 @@ footer.page-footer{
                 // add to files-array if not to hide and valid image-type
                 if(!in_array($sDirEntry,$this->aFilesToHide)
                     && in_array(ofgImage::getFileExtension($sDirEntry),$this->aValidImageTypes)){
-                    $oImage = new  ofgImage($sDirEntry);
-                    $oImage->setSThumbDir($this->sThumbDir);
+                    $oImage = new  ofgImage($sDirEntry,$this->sThumbDir);
                     $oImage->resize();
                     $oImage->crop();
                     $this->aFiles[] = $oImage;
@@ -948,7 +952,7 @@ for(i=0;i<jsonly.length;i++)
 
 
 // example how to set the dir for thumbs, default is .ofgThumbs
-// ofg::setThumbDir(".ofgThumbs");
+// ofg::setThumbDir(".ofgThumbs_");
 
 // create gallery
 new ofg();
