@@ -621,10 +621,10 @@ footer.page-footer{
         if(isset($_GET["view"])){
             $sView = strtolower($_GET["view"]);
             if($sView == "grid"){
-                setcookie("view","grid");
+                setcookie("view","grid",time()+60*60*24*30*365);
                 return "grid";
             }elseif($sView=="list"){
-                setcookie("view","list");
+                setcookie("view","list",time()+60*60*24*30*365);
                 return "list";
             }
         }
